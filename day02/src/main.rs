@@ -4,13 +4,7 @@ struct Level {
 }
 
 impl Level {
-    fn from_str(input: &str) -> Level {
-        let cells: Vec<usize> = input
-            .split(" ")
-            .map(|chunk| chunk.trim())
-            .map(|chunk| chunk.parse::<usize>().unwrap())
-            .collect();
-
+    fn new(cells: Vec<usize>) -> Level {
         let asc = cells
             .first()
             .zip(cells.last())
@@ -20,11 +14,36 @@ impl Level {
         Level { cells, asc }
     }
 
+    fn from_str(input: &str) -> Level {
+        let cells: Vec<usize> = input
+            .split(" ")
+            .map(|chunk| chunk.trim())
+            .map(|chunk| chunk.parse::<usize>().unwrap())
+            .collect();
+
+        Self::new(cells)
+    }
+
     pub fn is_safe(&self) -> bool {
         let pos0 = self.cells.iter();
         let pos1 = self.cells.iter().skip(1);
 
         pos0.zip(pos1).all(|(a, b)| self.cmp(*a, *b))
+    }
+
+    pub fn is_safe_with_tolerance(&self) -> bool {
+        if self.is_safe() {
+            return true
+        }
+
+        (0..self.cells.len()).into_iter().any(|index| self.without(index).is_safe())
+    }
+
+    pub fn without(&self, index: usize) -> Level {
+        let mut vec = Vec::with_capacity(self.cells.len() - 1);
+        vec.extend_from_slice(&self.cells[0..index]);
+        vec.extend_from_slice(&self.cells[index + 1..]);
+        Self::new(vec)
     }
 
     fn cmp(&self, n1: usize, n2: usize) -> bool {
@@ -44,11 +63,21 @@ fn day2_step1(input: &str) -> usize {
     levels.iter().filter(|l| l.is_safe()).count()
 }
 
+fn day2_step2(input: &str) -> usize {
+    let levels: Vec<Level> = input.lines()
+        .filter(|s| !s.is_empty())
+        .map(Level::from_str)
+        .collect();
+    levels.iter().filter(|l| l.is_safe_with_tolerance()).count()
+}
+
 fn main() {
     let input = include_str!("../input.txt");
-    let res = day2_step1(input);
+    let step1 = day2_step1(input);
+    let step2 = day2_step2(input);
 
-    println!("{}", res);
+    println!("step 1: {}", step1);
+    println!("step 2: {}", step2);
 }
 
 #[cfg(test)]
@@ -102,6 +131,14 @@ mod tests {
         let input = "7 6 2 1\n";
 
         assert_eq!(day2_step1(input), 0);
+    }
+
+
+    #[test]
+    fn tolerance_1_error_and_is_still_safe() {
+        let input = "1 2 3 7 4 5\n";
+
+        assert_eq!(day2_step2(input), 1);
     }
 
     #[test]
