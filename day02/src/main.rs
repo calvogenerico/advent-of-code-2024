@@ -33,10 +33,12 @@ impl Level {
 
     pub fn is_safe_with_tolerance(&self) -> bool {
         if self.is_safe() {
-            return true
+            return true;
         }
 
-        (0..self.cells.len()).into_iter().any(|index| self.without(index).is_safe())
+        (0..self.cells.len())
+            .into_iter()
+            .any(|index| self.without(index).is_safe())
     }
 
     pub fn without(&self, index: usize) -> Level {
@@ -56,7 +58,8 @@ impl Level {
 }
 
 fn day2_step1(input: &str) -> usize {
-    let levels: Vec<Level> = input.lines()
+    let levels: Vec<Level> = input
+        .lines()
         .filter(|s| !s.is_empty())
         .map(Level::from_str)
         .collect();
@@ -64,7 +67,8 @@ fn day2_step1(input: &str) -> usize {
 }
 
 fn day2_step2(input: &str) -> usize {
-    let levels: Vec<Level> = input.lines()
+    let levels: Vec<Level> = input
+        .lines()
         .filter(|s| !s.is_empty())
         .map(Level::from_str)
         .collect();
@@ -132,7 +136,6 @@ mod tests {
 
         assert_eq!(day2_step1(input), 0);
     }
-
 
     #[test]
     fn tolerance_1_error_and_is_still_safe() {
