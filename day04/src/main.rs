@@ -21,15 +21,23 @@ impl XmasMatrix {
         }
     }
 
-    pub fn count(&self) -> usize {
-        let x_positions = self.find_x_positions();
+    pub fn count_xmas(&self) -> usize {
+        let x_positions = self.find_positions_of('X');
         x_positions
             .iter()
-            .map(|(row, column)| self.find_rest_of_the_word(*row, *column))
+            .map(|(row, column)| self.find_rest_of_xmas(*row, *column))
             .sum()
     }
 
-    fn find_rest_of_the_word(&self, row: usize, column: usize) -> usize {
+    pub fn count_mas_cross(&self) -> usize {
+        let x_positions = self.find_positions_of('A');
+        x_positions
+            .iter()
+            .map(|(row, column)| self.find_rest_of_mas_cross(*row, *column))
+            .sum()
+    }
+
+    fn find_rest_of_xmas(&self, row: usize, column: usize) -> usize {
         self.west_to_east(row, column)
             + self.east_to_west(row, column)
             + self.north_to_south(row, column)
@@ -105,22 +113,77 @@ impl XmasMatrix {
     }
 
 
-    fn position_is(&self, row: usize, column: usize, target: char) -> bool {
-        self.matrix
-            .get(row)
-            .and_then(|inner| inner.get(column))
-            .map(|c| *c == target)
-            .unwrap_or(false)
+    fn find_rest_of_mas_cross(&self, row: usize, column: usize) -> usize {
+        self.m_to_north(row, column)
+            + self.m_to_east(row, column)
+            + self.m_to_west(row, column)
+            + self.m_to_south(row, column)
     }
 
-    fn find_x_positions(&self) -> Vec<(usize, usize)> {
+    fn m_to_north(&self, row: usize, column: usize) -> usize {
+        if row < 1 { return 0 }
+        if column < 1 { return 0 }
+
+        let is_match = self.position_is(row - 1, column - 1, 'M')
+            && self.position_is(row - 1, column + 1, 'M')
+            && self.position_is(row + 1, column - 1, 'S')
+            && self.position_is(row + 1, column + 1, 'S');
+
+        is_match.into()
+    }
+    fn m_to_east(&self, row: usize, column: usize) -> usize {
+        if row < 1 { return 0 }
+        if column < 1 { return 0 }
+
+        let is_match = self.position_is(row + 1, column + 1, 'M')
+            && self.position_is(row - 1, column + 1, 'M')
+            && self.position_is(row - 1, column - 1, 'S')
+            && self.position_is(row + 1, column - 1, 'S');
+
+        is_match.into()
+    }
+    fn m_to_west(&self, row: usize, column: usize) -> usize {
+        if row < 1 { return 0 }
+        if column < 1 { return 0 }
+
+        let is_match = self.position_is(row - 1, column - 1, 'M')
+            && self.position_is(row + 1, column - 1, 'M')
+            && self.position_is(row - 1, column + 1, 'S')
+            && self.position_is(row + 1, column + 1, 'S');
+
+        is_match.into()
+    }
+    fn m_to_south(&self, row: usize, column: usize) -> usize {
+        if row < 1 { return 0 }
+        if column < 1 { return 0 }
+
+        let is_match = self.position_is(row + 1, column - 1, 'M')
+            && self.position_is(row + 1, column + 1, 'M')
+            && self.position_is(row - 1, column + 1, 'S')
+            && self.position_is(row - 1, column - 1, 'S');
+
+        is_match.into()
+    }
+
+    fn position_is(&self, row: usize, column: usize, target: char) -> bool {
+        let x = self.matrix
+            .get(row)
+            .and_then(|inner| inner.get(column))
+            .map(|c| {
+                *c == target
+            })
+            .unwrap_or(false);
+
+        x
+    }
+
+    fn find_positions_of(&self, token: char) -> Vec<(usize, usize)> {
         let mut res = vec![];
 
         for row in 0..self.rows {
             for column in 0..self.columns {
                 let cell = self.matrix[row][column];
-                if cell == 'X' {
-
+                if cell == token {
                     res.push((row, column))
                 }
             }
@@ -132,14 +195,21 @@ impl XmasMatrix {
 
 fn step1(input: &str) -> usize {
     let matrix = XmasMatrix::from_str(input);
-    matrix.count()
+    matrix.count_xmas()
+}
+
+fn step2(input: &str) -> usize {
+    let matrix = XmasMatrix::from_str(input);
+    matrix.count_mas_cross()
 }
 
 fn main() {
     let input = include_str!("../input.txt");
     let res1 = step1(input);
+    let res2 = step2(input);
 
     println!("step1: {}", res1);
+    println!("step2: {}", res2);
 }
 
 #[cfg(test)]
@@ -272,5 +342,49 @@ mod tests {
         );
 
         assert_eq!(step1(input), 18);
+    }
+
+    //
+    // Step 2
+    //
+
+    #[test]
+    pub fn step_2_simplest_scenario_north() {
+        let input = concat!(
+            "M.M\n",
+            ".A.\n",
+            "S.S\n",
+        );
+        assert_eq!(step2(input), 1)
+    }
+
+    #[test]
+    pub fn step_2_simplest_scenario_south() {
+        let input = concat!(
+        "S.S\n",
+        ".A.\n",
+        "M.M\n",
+        );
+        assert_eq!(step2(input), 1)
+    }
+
+    #[test]
+    pub fn step_2_simplest_scenario_east() {
+        let input = concat!(
+        "S.M\n",
+        ".A.\n",
+        "S.M\n",
+        );
+        assert_eq!(step2(input), 1)
+    }
+
+    #[test]
+    pub fn step_2_simplest_scenario_wast() {
+        let input = concat!(
+        "M.S\n",
+        ".A.\n",
+        "M.S\n",
+        );
+        assert_eq!(step2(input), 1)
     }
 }
