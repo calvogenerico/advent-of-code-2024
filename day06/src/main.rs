@@ -156,16 +156,17 @@ impl OfficeWithAGuard {
 
     fn calculate_loop_corrections(&self) -> usize {
         let mut res = 0usize;
-        for row_n in 0..self.map.len() {
-            let row = &self.map[row_n];
-            for column_n in 0..row.len() {
-                println!("({} {})", row_n, column_n);
-                let mut copy = self.clone_with_obstacle((row_n as isize , column_n as isize));
-                if copy.search_loop() {
-                    res += 1;
-                }
+
+        let mut copy = self.clone_with_obstacle((0, 0));
+        copy.patrol();
+
+        copy.path.keys().for_each(|(row, column)| {
+            let mut copy = self.clone_with_obstacle((*row, *column));
+            if copy.search_loop() {
+                res += 1;
             }
-        }
+        });
+
         res
     }
 }
