@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 pub struct EquationLine {
     expected: usize,
     elements: Vec<usize>,
@@ -65,12 +63,13 @@ impl EquationLine {
                 .cloned()
                 .enumerate()
                 .reduce(|(index, a), (next_index, b)| {
-                    let r = match operations[index] {
+                    let partial = match operations[index] {
                         Operation::Sum => a + b,
                         Operation::Prod => a * b,
                         Operation::Concat => concat_usize(a, b),
                     };
-                    (next_index, r)
+
+                    (next_index, partial)
                 })
                 .map(|(_, a)| a)
                 .unwrap();
