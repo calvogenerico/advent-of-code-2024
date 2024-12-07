@@ -1,5 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{HashMap};
 
+#[derive(Clone, PartialEq)]
 pub enum Direction {
     North,
     West,
@@ -15,6 +16,7 @@ pub enum Terrain {
 
 type Point = (isize, isize);
 
+#[derive(Clone)]
 pub struct Guard {
     position: Point,
     direction: Direction,
@@ -23,7 +25,7 @@ pub struct Guard {
 pub struct OfficeWithAGuard {
     guard: Guard,
     map: Vec<Vec<Terrain>>,
-    path: HashSet<Point>,
+    path: HashMap<Point, Vec<Direction>>
 }
 
 impl OfficeWithAGuard {
@@ -59,16 +61,25 @@ impl OfficeWithAGuard {
             });
 
         let guard = guard.unwrap();
-        let path = HashSet::new();
+        let path = HashMap::new();
         OfficeWithAGuard { map, guard, path }
     }
 
     pub fn patrol(&mut self) -> usize {
         while self.guard_is_inside() {
-            self.path.insert(self.guard.position.clone());
+            self.register_step();
             self.guard_step();
         }
         self.path.len()
+    }
+
+    fn register_step(&mut self) {
+        let value = self.path.get_mut(&self.guard.position);
+        if value.is_some() {
+            value.unwrap().push(self.guard.direction.clone());
+        } else {
+            self.path.insert(self.guard.position.clone(), vec![self.guard.direction.clone()]);
+        }
     }
 
     fn guard_is_inside(&self) -> bool {
@@ -112,6 +123,51 @@ impl OfficeWithAGuard {
             })
             .unwrap_or(false)
     }
+
+    fn search_loop(&mut self) -> bool {
+        loop {
+            if !self.guard_is_inside() {
+                return false
+            }
+
+            self.register_step();
+            self.guard_step();
+
+            let was_here = self.path.get(&self.guard.position)
+                .map(|v| v.contains(&self.guard.direction));
+
+            if was_here.is_some_and(|b| b) {
+                return true
+            }
+        }
+
+    }
+
+    fn clone_with_obstacle(&self, (row, column): Point) -> OfficeWithAGuard {
+        let mut map = self.map.clone();
+        map[row as usize][column as usize] = Terrain::Obstacle;
+
+        OfficeWithAGuard {
+            path: HashMap::new(),
+            map,
+            guard: self.guard.clone(),
+        }
+    }
+
+    fn calculate_loop_corrections(&self) -> usize {
+        let mut res = 0usize;
+        for row_n in 0..self.map.len() {
+            let row = &self.map[row_n];
+            for column_n in 0..row.len() {
+                println!("({} {})", row_n, column_n);
+                let mut copy = self.clone_with_obstacle((row_n as isize , column_n as isize));
+                if copy.search_loop() {
+                    res += 1;
+                }
+            }
+        }
+        res
+    }
 }
 
 impl Guard {
@@ -152,7 +208,8 @@ fn step1(input: &str) -> usize {
 }
 
 fn step2(input: &str) -> usize {
-    input.len()
+    let office = OfficeWithAGuard::from_str(input);
+    office.calculate_loop_corrections()
 }
 
 fn main() {
@@ -182,5 +239,23 @@ mod tests {
             ".#."
         );
         assert_eq!(step1(input), 2);
+    }
+
+    #[test]
+    fn step2_test_1() {
+        let input = text_block_fnl!(
+            "....#....."
+            ".........#"
+            ".........."
+            "..#......."
+            ".......#.."
+            ".........."
+            ".#..^....."
+            "........#."
+            "#........."
+            "......#..."
+        );
+
+        assert_eq!(step2(input), 6);
     }
 }
