@@ -1,14 +1,16 @@
+use std::fmt::format;
+
 pub struct EquationLine {
     expected: usize,
     elements: Vec<usize>,
-    allowed_operations: Vec<Operation>
+    allowed_operations: Vec<Operation>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Operation {
     Sum,
     Prod,
-    Concat
+    Concat,
 }
 
 fn usize_len(n: usize) -> u32 {
@@ -22,22 +24,26 @@ fn usize_len(n: usize) -> u32 {
 }
 
 fn concat_usize(a: usize, b: usize) -> usize {
-    a * (10usize.pow(usize_len(b)) ) + b
+    a * (10usize.pow(usize_len(b))) + b
 }
 
 impl EquationLine {
-    pub fn from_str(input: &str, operations: Vec<Operation>) -> EquationLine{
+    pub fn from_str(input: &str, operations: Vec<Operation>) -> EquationLine {
         let mut parts = input.split(":");
         let expected = parts.next().unwrap().trim();
-        let elements =  parts.next().unwrap().trim().split(" ").map(|chunk| chunk.trim())
-            .map(|chunk| {
-                chunk.parse().unwrap()
-            }).collect();
+        let elements = parts
+            .next()
+            .unwrap()
+            .trim()
+            .split(" ")
+            .map(|chunk| chunk.trim())
+            .map(|chunk| chunk.parse().unwrap())
+            .collect();
 
         EquationLine {
             expected: expected.parse().unwrap(),
             elements,
-            allowed_operations: operations
+            allowed_operations: operations,
         }
     }
 
@@ -50,25 +56,34 @@ impl EquationLine {
     }
 
     fn can_achieve_equality(&self) -> bool {
-        let possibilities: Vec<Vec<Operation>> = self.calculate_possibilities(self.elements.len() - 1);
+        let possibilities: Vec<Vec<Operation>> =
+            self.calculate_possibilities(self.elements.len() - 1);
         possibilities.iter().any(|operations| {
-
-            let calculated = self.elements.iter().cloned().enumerate().reduce(|(index, a), (next_index, b)| {
-                let r = match operations[index] {
-                    Operation::Sum => a + b,
-                    Operation::Prod => a * b,
-                    Operation::Concat => {
-                        concat_usize(a, b)
-                    }
-                };
-                (next_index, r)
-            }).map(|(_, a)| a).unwrap();
+            let calculated = self
+                .elements
+                .iter()
+                .cloned()
+                .enumerate()
+                .reduce(|(index, a), (next_index, b)| {
+                    let r = match operations[index] {
+                        Operation::Sum => a + b,
+                        Operation::Prod => a * b,
+                        Operation::Concat => concat_usize(a, b),
+                    };
+                    (next_index, r)
+                })
+                .map(|(_, a)| a)
+                .unwrap();
             calculated == self.expected
         })
     }
 
-    fn calculate_possibilities(&self, final_length: usize) -> Vec<Vec<Operation>>{
-        let mut all_possibilities: Vec<Vec<Operation>> = self.allowed_operations.iter().map(|o| vec![o.clone()]).collect();
+    fn calculate_possibilities(&self, final_length: usize) -> Vec<Vec<Operation>> {
+        let mut all_possibilities: Vec<Vec<Operation>> = self
+            .allowed_operations
+            .iter()
+            .map(|o| vec![o.clone()])
+            .collect();
         for _ in 0..(final_length - 1) {
             let mut new = vec![];
             for p in all_possibilities {
@@ -88,7 +103,7 @@ fn step1(input: &str) -> usize {
     input
         .lines()
         .filter(|l| l.len() > 0)
-        .map(|str | EquationLine::from_str(str, vec![Operation::Sum, Operation::Prod]) )
+        .map(|str| EquationLine::from_str(str, vec![Operation::Sum, Operation::Prod]))
         .map(|e| e.calibration_result())
         .sum()
 }
@@ -97,11 +112,15 @@ fn step2(input: &str) -> usize {
     input
         .lines()
         .filter(|l| l.len() > 0)
-        .map(|str | EquationLine::from_str(str, vec![Operation::Sum, Operation::Prod, Operation::Concat]) )
+        .map(|str| {
+            EquationLine::from_str(
+                str,
+                vec![Operation::Sum, Operation::Prod, Operation::Concat],
+            )
+        })
         .map(|e| e.calibration_result())
         .sum()
 }
-
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -118,9 +137,7 @@ mod tests {
 
     #[test]
     fn test_01() {
-        let input = text_block_fnl!(
-            "190: 10 19"
-        );
+        let input = text_block_fnl!("190: 10 19");
         assert_eq!(step1(input), 190)
     }
 
