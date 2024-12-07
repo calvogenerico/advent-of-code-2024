@@ -1,6 +1,7 @@
 pub struct EquationLine {
     expected: usize,
-    elements: Vec<usize>
+    elements: Vec<usize>,
+    allowed_operations: Vec<Operation>
 }
 
 #[derive(Debug, Clone)]
@@ -14,7 +15,7 @@ fn concat_n(a: usize, b: usize) -> usize {
 }
 
 impl EquationLine {
-    pub fn from_str(input: &str) -> EquationLine{
+    pub fn from_str(input: &str, operations: Vec<Operation>) -> EquationLine{
         let mut parts = input.split(":");
         let expected = parts.next().unwrap().trim();
         let elements =  parts.next().unwrap().trim().split(" ").map(|chunk| chunk.trim())
@@ -24,7 +25,8 @@ impl EquationLine {
 
         EquationLine {
             expected: expected.parse().unwrap(),
-            elements
+            elements,
+            allowed_operations: operations
         }
     }
 
@@ -37,8 +39,7 @@ impl EquationLine {
     }
 
     fn can_achieve_equality(&self) -> bool {
-        let possibilities: Vec<Vec<Operation>> = Self::calculate_possibilities(self.elements.len() - 1);
-
+        let possibilities: Vec<Vec<Operation>> = self.calculate_possibilities(self.elements.len() - 1);
         possibilities.iter().any(|operations| {
 
             let calculated = self.elements.iter().cloned().enumerate().reduce(|(index, a), (next_index, b)| {
@@ -55,24 +56,16 @@ impl EquationLine {
         })
     }
 
-    fn calculate_possibilities(final_length: usize) -> Vec<Vec<Operation>>{
-        let mut all_possibilities = vec![vec![Operation::Prod], vec![Operation::Sum], vec![Operation::Concat]];
+    fn calculate_possibilities(&self, final_length: usize) -> Vec<Vec<Operation>>{
+        let mut all_possibilities: Vec<Vec<Operation>> = self.allowed_operations.iter().map(|o| vec![o.clone()]).collect();
         for _ in 0..(final_length - 1) {
             let mut new = vec![];
             for p in all_possibilities {
-                let mut with_mul = p.clone();
-                with_mul.push(Operation::Prod);
-
-                let mut with_sum = p.clone();
-                with_sum.push(Operation::Sum);
-
-                let mut with_concat = p.clone();
-                with_concat.push(Operation::Concat);
-
-
-                new.push(with_mul);
-                new.push(with_sum);
-                new.push(with_concat);
+                self.allowed_operations.iter().for_each(|o| {
+                    let mut with_op = p.clone();
+                    with_op.push(o.clone());
+                    new.push(with_op)
+                });
             }
             all_possibilities = new;
         }
@@ -84,13 +77,18 @@ fn step1(input: &str) -> usize {
     input
         .lines()
         .filter(|l| l.len() > 0)
-        .map(EquationLine::from_str)
+        .map(|str | EquationLine::from_str(str, vec![Operation::Sum, Operation::Prod]) )
         .map(|e| e.calibration_result())
         .sum()
 }
 
 fn step2(input: &str) -> usize {
-    input.len()
+    input
+        .lines()
+        .filter(|l| l.len() > 0)
+        .map(|str | EquationLine::from_str(str, vec![Operation::Sum, Operation::Prod, Operation::Concat]) )
+        .map(|e| e.calibration_result())
+        .sum()
 }
 
 
@@ -146,12 +144,27 @@ mod tests {
             "21037: 9 7 18 13"
             "292: 11 6 16 20"
         };
-        assert_eq!(step1(input), 11387)
+        assert_eq!(step1(input), 3749)
+    }
+
+    #[test]
+    fn step2_mini_case_from_text() {
+        let input = text_block_fnl! {
+            "190: 10 19"
+            "3267: 81 40 27"
+            "83: 17 5"
+            "156: 15 6"
+            "7290: 6 8 6 15"
+            "161011: 16 10 13"
+            "192: 17 8 14"
+            "21037: 9 7 18 13"
+            "292: 11 6 16 20"
+        };
+        assert_eq!(step2(input), 11387)
     }
 
     #[test]
     fn concat_usize_1() {
         assert_eq!(concat_n(1, 2), 12)
     }
-
 }
