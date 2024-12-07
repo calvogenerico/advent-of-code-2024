@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "day06"
+name = "day07"
 version = "0.1.0"
 dependencies = [
  "text-block-macros",
