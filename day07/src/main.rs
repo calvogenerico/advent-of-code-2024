@@ -10,8 +10,19 @@ pub enum Operation {
     Prod,
     Concat
 }
-fn concat_n(a: usize, b: usize) -> usize {
-    format!("{}{}", a, b).parse().unwrap()
+
+fn usize_len(n: usize) -> u32 {
+    let mut n = n;
+    let mut res = 1;
+    while n / 10 > 0 {
+        res += 1;
+        n = n / 10;
+    }
+    res
+}
+
+fn concat_usize(a: usize, b: usize) -> usize {
+    a * (10usize.pow(usize_len(b)) ) + b
 }
 
 impl EquationLine {
@@ -47,7 +58,7 @@ impl EquationLine {
                     Operation::Sum => a + b,
                     Operation::Prod => a * b,
                     Operation::Concat => {
-                        concat_n(a, b)
+                        concat_usize(a, b)
                     }
                 };
                 (next_index, r)
@@ -165,6 +176,15 @@ mod tests {
 
     #[test]
     fn concat_usize_1() {
-        assert_eq!(concat_n(1, 2), 12)
+        assert_eq!(concat_usize(11, 22), 1122);
+        assert_eq!(concat_usize(1, 2), 12);
+    }
+
+    #[test]
+    fn test_usize_len() {
+        assert_eq!(usize_len(1), 1);
+        assert_eq!(usize_len(11), 2);
+        assert_eq!(usize_len(0), 1);
+        assert_eq!(usize_len(12345), 5);
     }
 }
