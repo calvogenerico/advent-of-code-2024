@@ -45,8 +45,13 @@ impl OfficeWithAGuard {
                         '#' => row.push(Terrain::Obstacle),
                         '^' => {
                             row.push(Terrain::Free);
-                            guard
-                                .replace(Guard::new(Direction::North, (row_number.try_into().unwrap(), column_number.try_into().unwrap())));
+                            guard.replace(Guard::new(
+                                Direction::North,
+                                (
+                                    row_number.try_into().unwrap(),
+                                    column_number.try_into().unwrap(),
+                                ),
+                            ));
                         }
                         _ => panic!("unknown cell"),
                     });
@@ -55,11 +60,7 @@ impl OfficeWithAGuard {
 
         let guard = guard.unwrap();
         let path = HashSet::new();
-        OfficeWithAGuard {
-            map,
-            guard,
-            path,
-        }
+        OfficeWithAGuard { map, guard, path }
     }
 
     pub fn patrol(&mut self) -> usize {
@@ -73,15 +74,13 @@ impl OfficeWithAGuard {
     fn guard_is_inside(&self) -> bool {
         let (row, column) = self.guard.position;
         if row < 0 || column < 0 {
-            return false
+            return false;
         }
 
         let row = usize::try_from(row).unwrap();
         let column = usize::try_from(column).unwrap();
 
-        let option = self.map.get(row).and_then(|row| {
-            row.get(column)
-        });
+        let option = self.map.get(row).and_then(|row| row.get(column));
         option.is_some()
     }
 
@@ -98,7 +97,7 @@ impl OfficeWithAGuard {
 
     fn is_obstacle_at(&self, (row, column): Point) -> bool {
         if row < 0 || column < 0 {
-            return false
+            return false;
         }
 
         let row = usize::try_from(row).unwrap();
@@ -167,6 +166,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use text_block_macros::text_block_fnl;
 
     #[test]
     fn test_01() {
@@ -176,10 +176,10 @@ mod tests {
 
     #[test]
     fn test_02() {
-        let input = concat!(
-            "#..\n",
-            "^.#\n",
-            ".#.\n"
+        let input = text_block_fnl!(
+            "#.."
+            "^.#"
+            ".#."
         );
         assert_eq!(step1(input), 2);
     }
