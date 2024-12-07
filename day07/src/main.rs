@@ -6,7 +6,11 @@ pub struct EquationLine {
 #[derive(Debug, Clone)]
 pub enum Operation {
     Sum,
-    Prod
+    Prod,
+    Concat
+}
+fn concat_n(a: usize, b: usize) -> usize {
+    format!("{}{}", a, b).parse().unwrap()
 }
 
 impl EquationLine {
@@ -40,7 +44,10 @@ impl EquationLine {
             let calculated = self.elements.iter().cloned().enumerate().reduce(|(index, a), (next_index, b)| {
                 let r = match operations[index] {
                     Operation::Sum => a + b,
-                    Operation::Prod => a * b
+                    Operation::Prod => a * b,
+                    Operation::Concat => {
+                        concat_n(a, b)
+                    }
                 };
                 (next_index, r)
             }).map(|(_, a)| a).unwrap();
@@ -49,7 +56,7 @@ impl EquationLine {
     }
 
     fn calculate_possibilities(final_length: usize) -> Vec<Vec<Operation>>{
-        let mut all_possibilities = vec![vec![Operation::Prod], vec![Operation::Sum]];
+        let mut all_possibilities = vec![vec![Operation::Prod], vec![Operation::Sum], vec![Operation::Concat]];
         for _ in 0..(final_length - 1) {
             let mut new = vec![];
             for p in all_possibilities {
@@ -59,9 +66,13 @@ impl EquationLine {
                 let mut with_sum = p.clone();
                 with_sum.push(Operation::Sum);
 
+                let mut with_concat = p.clone();
+                with_concat.push(Operation::Concat);
+
 
                 new.push(with_mul);
                 new.push(with_sum);
+                new.push(with_concat);
             }
             all_possibilities = new;
         }
@@ -135,6 +146,12 @@ mod tests {
             "21037: 9 7 18 13"
             "292: 11 6 16 20"
         };
-        assert_eq!(step1(input), 3749)
+        assert_eq!(step1(input), 11387)
     }
+
+    #[test]
+    fn concat_usize_1() {
+        assert_eq!(concat_n(1, 2), 12)
+    }
+
 }
