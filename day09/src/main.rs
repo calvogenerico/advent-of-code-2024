@@ -51,12 +51,15 @@ impl AmphipodDisk {
         }
     }
 
+    pub fn compact_defragmented(&mut self) {
+
+    }
+
     pub fn checksum(&self) -> usize {
         self.data
             .iter()
-            .filter(|cell| cell.is_some())
             .enumerate()
-            .map(|(i, cell)| i * cell.unwrap())
+            .map(|(i, cell)| i * cell.unwrap_or(0))
             .sum()
     }
 }
@@ -68,7 +71,9 @@ fn step1(input: &str) -> usize {
 }
 
 fn step2(input: &str) -> usize {
-    input.len()
+    let mut disk = AmphipodDisk::new(input);
+    disk.compact_defragmented();
+    disk.checksum()
 }
 
 fn main() {
@@ -114,8 +119,18 @@ mod tests {
     #[test]
     fn provided_small_scenario() {
         let input = "2333133121414131402";
-        // 0..111....22222
-        // 022111222
+
+        assert_eq!(
+            step1(input),
+            1928
+        )
+    }
+
+    #[test]
+    fn step_2_simple_case() {
+        let input = "13312";
+        // 0...111.22
+        // -> 022.111.
         // 012345678
         assert_eq!(
             step1(input),
