@@ -29,8 +29,16 @@ impl TopographicMap {
         self.get_trail_heads().iter().map(|th| self.score(th)).sum()
     }
 
+    pub fn total_score2(&self) -> usize {
+        self.get_trail_heads().iter().map(|th| self.score2(th)).sum()
+    }
+
     fn score(&self, trailhead: &Position) -> usize {
         self.score_aux(trailhead).len()
+    }
+
+    fn score2(&self, trailhead: &Position) -> usize {
+        self.score_aux2(trailhead).len()
     }
 
     fn score_aux(&self, position: &Position) -> HashSet<Position> {
@@ -42,6 +50,17 @@ impl TopographicMap {
         self.neighbors(position).iter()
             .filter(|(row, column)| self.map[*row][*column] == current + 1 )
             .flat_map(|pos| self.score_aux(pos)).collect()
+    }
+
+    fn score_aux2(&self, position: &Position) -> Vec<Position> {
+        let current = self.map[position.0][position.1];
+        if current == 9 {
+            return vec![*position]
+        }
+
+        self.neighbors(position).iter()
+            .filter(|(row, column)| self.map[*row][*column] == current + 1 )
+            .flat_map(|pos| self.score_aux2(pos)).collect()
     }
 
     fn neighbors(&self, position: &Position) -> HashSet<Position> {
@@ -72,7 +91,8 @@ fn step1(input: &str) -> usize {
 }
 
 fn step2(input: &str) -> usize {
-    input.len()
+    let map = TopographicMap::from_str(input);
+    map.total_score2()
 }
 
 
@@ -128,5 +148,36 @@ mod tests {
         };
 
         assert_eq!(step1(input), 36);
+    }
+
+    #[test]
+    fn step2_given_example() {
+        let input = text_block_fnl! {
+            "89010123"
+            "78121874"
+            "87430965"
+            "96549874"
+            "45678903"
+            "32019012"
+            "01329801"
+            "10456732"
+        };
+
+        assert_eq!(step2(input), 81);
+    }
+
+
+    #[test]
+    fn ste2_coso1() {
+        let input = text_block_fnl! {
+            "7777707"
+            "7743217"
+            "7757727"
+            "7765437"
+            "7777747"
+            "7787657"
+            "7797777"
+        };
+        assert_eq!(step2(input), 3);
     }
 }
