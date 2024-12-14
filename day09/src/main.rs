@@ -1,30 +1,40 @@
+use std::ops::Range;
+
 pub struct AmphipodDisk {
     data: Vec<Option<usize>>,
     first_free: Option<usize>,
     last_used: usize,
+    file_buckets: Vec<Range<usize>>,
+    empty_buckets: Vec<Range<usize>>
 }
 
 impl AmphipodDisk {
     pub fn new(memory_map: &str) -> AmphipodDisk {
         let mut data = vec![];
+        let mut empty_buckets = vec![];
+        let mut file_buckets = vec![];
         let mut first_free = None;
         let mut last_used = 0;
         for (index, c) in memory_map.trim().chars().enumerate() {
             if !c.is_ascii_digit() {
-                panic!("input shuld be only numbers")
+                panic!("input should be only numbers")
             }
             let n = c.to_digit(10).unwrap() as usize;
 
             if index % 2 == 0 {
+                let start = data.len();
                 for _ in 0..n {
                     data.push(Some(index / 2))
                 }
                 last_used = data.len() - 1;
+                file_buckets.push(start..data.len())
             } else {
-                first_free = first_free.or(Some(data.len()));
+                let start = data.len();
+                first_free = first_free.or(Some(start));
                 for _ in 0..n {
                     data.push(None)
                 }
+                empty_buckets.push(start..data.len())
             }
         }
 
@@ -32,6 +42,8 @@ impl AmphipodDisk {
             data,
             last_used,
             first_free,
+            file_buckets ,
+            empty_buckets
         }
     }
 
@@ -52,6 +64,21 @@ impl AmphipodDisk {
     }
 
     pub fn compact_defragmented(&mut self) {
+        for file in self.file_buckets.iter().rev() {
+            let maybe_slot = self.empty_buckets.iter_mut().find(|bucket| {
+                bucket.end <= file.start && bucket.len() >= file.len()
+            });
+
+            if maybe_slot.is_some() {
+                let slot = maybe_slot.unwrap();
+                slot.clone().step_by(1).zip(file.clone().step_by(1)).for_each(|(a, b)| {
+                    let data = self.data[b].take().unwrap();
+                    self.data[a].replace(data);
+                });
+                let i = file.len();
+                slot.start = slot.start + i;
+            }
+        }
 
     }
 
@@ -131,10 +158,31 @@ mod tests {
         let input = "13312";
         // 0...111.22
         // -> 022.111.
+        // -> 01234567
         // 012345678
         assert_eq!(
-            step1(input),
-            1928
+            step2(input),
+            2 + 4 + 4 + 5 +6
         )
+    }
+
+    #[test]
+    fn step_2_using_upgraded_size() {
+        let input = "13112";
+        // 0...1.22
+        // -> 0221...
+        // -> 01234567
+        // 012345678
+        assert_eq!(
+            step2(input),
+            2 + 4 + 3
+        )
+    }
+
+    #[test]
+    fn step_2_provided_example() {
+        let input = "2333133121414131402";
+
+        assert_eq!(step2(input), 2858)
     }
 }
