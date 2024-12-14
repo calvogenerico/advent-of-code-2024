@@ -1,3 +1,26 @@
+type Position = (usize, usize);
+
+pub struct Garden {
+    plants: Vec<Vec<char>>,
+    processed: Vec<Vec<bool>>,
+}
+
+impl Garden {
+    pub fn from_str(input: &str) -> Garden {
+        let plants: Vec<Vec<char>> = input
+            .lines()
+            .filter(|l| !l.is_empty())
+            .map(|l| l.chars().collect())
+            .collect();
+
+        ;
+
+        let processed = plants.iter().map(|row| row.iter().map(|_| false)).collect();
+
+        Garden { processed, plants }
+    }
+}
+
 fn step1(input: &str) -> usize {
     input.len()
 }
@@ -5,7 +28,6 @@ fn step1(input: &str) -> usize {
 fn step2(input: &str) -> usize {
     input.len()
 }
-
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -22,10 +44,7 @@ mod tests {
 
     #[test]
     fn test_01() {
-        let input = text_block_fnl!(
-            "a"
-            "b"
-        );
+        let input = text_block_fnl!("A");
         assert_eq!(step1(input), 4)
     }
 }
