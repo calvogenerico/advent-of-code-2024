@@ -106,20 +106,25 @@ impl Garden {
         let tiles = self.get_tiles(from, vegetable);
         let area = tiles.len();
 
-        let mut vertical_fences: HashMap<isize, Vec<isize>> = HashMap::new();
+        let mut vertical_fences: HashMap<(u8, isize), Vec<isize>> = HashMap::new();
         // 0   1   2   3
         // | x | x | x |
 
-        let mut horizontal_fences: HashMap<isize, Vec<isize>> = HashMap::new();
+        let mut horizontal_fences: HashMap<(u8, isize), Vec<isize>> = HashMap::new();
         //0---
         // x (0,0)
         //1----
         // x (0, 1)
         //2 ----
 
+
+        // n -> 0
+        // e -> 1
+        // s -> 2
+        // w -> 3
         for tile in &tiles {
             if !tiles.contains(&tile.north()) {
-                let key = tile.1;
+                let key = (0, tile.1);
                 let value = tile.0;
                 if let Some(v) = vertical_fences.get_mut(&key) {
                     v.push(value)
@@ -129,7 +134,7 @@ impl Garden {
             }
 
             if !tiles.contains(&tile.south()) {
-                let key = tile.1 + 1;
+                let key = (2, tile.1 + 1);
                 let value = tile.0;
                 if let Some(v) = vertical_fences.get_mut(&key) {
                     v.push(value)
@@ -139,7 +144,7 @@ impl Garden {
             }
 
             if !tiles.contains(&tile.west()) {
-                let key = tile.0;
+                let key = (3, tile.0);
                 let value = tile.1;
                 if let Some(v) = horizontal_fences.get_mut(&key) {
                     v.push(value)
@@ -149,7 +154,7 @@ impl Garden {
             }
 
             if !tiles.contains(&tile.east()) {
-                let key = tile.0 + 1;
+                let key = (1, tile.0 + 1);
                 let value = tile.1;
                 if let Some(v) = horizontal_fences.get_mut(&key) {
                     v.push(value)
@@ -158,9 +163,6 @@ impl Garden {
                 }
             }
         }
-        println!("vegetable: {:?}", vegetable);
-        println!("horizontal: {:?}", horizontal_fences);
-        println!("vertical: {:?}", vertical_fences);
 
         let mut cheap_perimeter = 0;
 
@@ -176,6 +178,7 @@ impl Garden {
             let iter1 = list.iter();
             let iter2 = list.iter().skip(1);
             cheap_perimeter += iter1.zip(iter2).filter(|(n1, n2)| **n2 != **n1 + 1).count() + 1;
+
         }
 
         (cheap_perimeter, area)
