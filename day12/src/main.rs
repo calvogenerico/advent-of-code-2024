@@ -1,22 +1,38 @@
-use std::collections::HashSet;
+use std::collections::{HashMap};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct Position(isize, isize);
 
 impl Position {
+    pub fn north(&self) -> Position {
+        Position(self.0, self.1 - 1)
+    }
+
+    pub fn south(&self) -> Position {
+        Position(self.0, self.1 + 1)
+    }
+
+    pub fn west(&self) -> Position {
+        Position(self.0 - 1, self.1)
+    }
+
+    pub fn east(&self) -> Position {
+        Position(self.0 + 1, self.1)
+    }
+
     pub fn neighbors(&self) -> Vec<Position> {
         vec![
-            Position(self.0 + 1, self.1),
-            Position(self.0, self.1 + 1),
-            Position(self.0 - 1, self.1),
-            Position(self.0, self.1 - 1)
+            self.north(),
+            self.east(),
+            self.south(),
+            self.west()
         ]
     }
 }
 
 pub struct Garden {
     plants: Vec<Vec<char>>,
-    processed: Vec<Vec<bool>>
+    processed: Vec<Vec<bool>>,
 }
 
 impl Garden {
@@ -32,7 +48,10 @@ impl Garden {
             .map(|row| row.iter().map(|_| false).collect())
             .collect();
 
-        Garden { processed, plants }
+        Garden {
+            processed,
+            plants
+        }
     }
 
     pub fn fence_cost(&mut self) -> usize {
@@ -86,56 +105,78 @@ impl Garden {
     fn calculate_cost_with_discount_from(&mut self, from: &Position, vegetable: char) -> (usize, usize) {
         let tiles = self.get_tiles(from, vegetable);
         let area = tiles.len();
-        let mut all_phantoms: HashSet<Position> = HashSet::new();
+
+        let mut vertical_fences: HashMap<isize, Vec<isize>> = HashMap::new();
+        // 0   1   2   3
+        // | x | x | x |
+
+        let mut horizontal_fences: HashMap<isize, Vec<isize>> = HashMap::new();
+        //0---
+        // x (0,0)
+        //1----
+        // x (0, 1)
+        //2 ----
+
+        for tile in &tiles {
+            if !tiles.contains(&tile.north()) {
+                let key = tile.1;
+                let value = tile.0;
+                if let Some(v) = vertical_fences.get_mut(&key) {
+                    v.push(value)
+                } else {
+                    vertical_fences.insert(key, vec![value]);
+                }
+            }
+
+            if !tiles.contains(&tile.south()) {
+                let key = tile.1 + 1;
+                let value = tile.0;
+                if let Some(v) = vertical_fences.get_mut(&key) {
+                    v.push(value)
+                } else {
+                    vertical_fences.insert(key, vec![value]);
+                }
+            }
+
+            if !tiles.contains(&tile.west()) {
+                let key = tile.0;
+                let value = tile.1;
+                if let Some(v) = horizontal_fences.get_mut(&key) {
+                    v.push(value)
+                } else {
+                    horizontal_fences.insert(key, vec![value]);
+                }
+            }
+
+            if !tiles.contains(&tile.east()) {
+                let key = tile.0 + 1;
+                let value = tile.1;
+                if let Some(v) = horizontal_fences.get_mut(&key) {
+                    v.push(value)
+                } else {
+                    horizontal_fences.insert(key, vec![value]);
+                }
+            }
+        }
+        println!("vegetable: {:?}", vegetable);
+        println!("horizontal: {:?}", horizontal_fences);
+        println!("vertical: {:?}", vertical_fences);
 
         let mut cheap_perimeter = 0;
 
-        for tile in &tiles {
-            let all_neighbors = tile.neighbors();
-            let edges = all_neighbors.iter().filter(|n| !tiles.contains(n)).collect::<Vec<_>>();
-
-            if edges.len() == 3 {
-                cheap_perimeter += 2;
-                continue
-            }
-
-            if edges.len() == 2 && !(edges[0].0 == edges[1].0 || edges[0].1 == edges[1].1) {
-                cheap_perimeter += 1;
-                continue
-            }
-
-            let phantoms = all_neighbors.iter().filter(|n| !tiles.contains(n)).collect::<Vec<_>>();
-            for phantom in phantoms {
-                if all_phantoms.get(phantom).is_some() {
-                    continue
-                }
-                all_phantoms.insert(phantom.clone());
-
-                let phantom_neighbors = phantom.neighbors();
-                let overlapping_phantom_neighors = phantom_neighbors.iter().filter(|n| tiles.contains(n)).collect::<Vec<_>>();
-
-                if overlapping_phantom_neighors.len() == 3 {
-                    cheap_perimeter += 2;
-                }
-
-                if overlapping_phantom_neighors.len() == 2 && !(overlapping_phantom_neighors[0].0 == overlapping_phantom_neighors[1].0 || overlapping_phantom_neighors[0].1 == overlapping_phantom_neighors[1].1) {
-                    cheap_perimeter += 1;
-                }
-            }
-
+        for list in horizontal_fences.values_mut() {
+            list.sort();
+            let iter1 = list.iter();
+            let iter2 = list.iter().skip(1);
+            cheap_perimeter += iter1.zip(iter2).filter(|(n1, n2)| **n2 != **n1 + 1).count() + 1;
         }
 
-        // let neighbors = from.neighbors();
-        // let edges = neighbors.iter()
-        //     .filter(|n| !self.is_at(n, vegetable))
-        //     .count() + 4 - neighbors.len();
-
-        // let filter = neighbors.iter()
-        //     .filter(|n| self.is_at(n, vegetable))
-        //     .collect::<Vec<_>>();
-        // let (perimeter, area) = filter.iter()
-        //     .map(|n| self.calculate_cost_with_discount_from(n, vegetable))
-        //     .reduce(|(a1, a2), (b1, b2)| (a1 + b1, a2 + b2)).unwrap_or((0, 0));
+        for list in vertical_fences.values_mut() {
+            list.sort();
+            let iter1 = list.iter();
+            let iter2 = list.iter().skip(1);
+            cheap_perimeter += iter1.zip(iter2).filter(|(n1, n2)| **n2 != **n1 + 1).count() + 1;
+        }
 
         (cheap_perimeter, area)
     }
@@ -298,6 +339,6 @@ mod tests {
             "MIIISIJEEE"
             "MMMISSJEEE"
         );
-        assert_eq!(step2(input), 1930)
+        assert_eq!(step2(input), 1206)
     }
 }
