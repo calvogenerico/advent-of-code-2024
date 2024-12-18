@@ -25,16 +25,8 @@ impl Position {
         }
     }
 
-    pub fn north(&self) -> Position {
-        self.neighbor_at(&Movement::North)
-    }
-
     pub fn east(&self) -> Position {
         self.neighbor_at(&Movement::East)
-    }
-
-    pub fn south(&self) -> Position {
-        self.neighbor_at(&Movement::South)
     }
 
     pub fn west(&self) -> Position {
