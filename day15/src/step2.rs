@@ -30,16 +30,19 @@ impl LargerGoodsDeposit {
     pub fn from_str(input: &str) -> LargerGoodsDeposit {
         let mut sections = input.split("\n\n");
 
-        let map_section: String = sections.next().unwrap().chars().map(|char| {
-            match char {
+        let map_section: String = sections
+            .next()
+            .unwrap()
+            .chars()
+            .map(|char| match char {
                 '@' => "@.",
                 'O' => "[]",
                 '#' => "##",
                 '.' => "..",
                 '\n' => "\n",
-                _ => unreachable!()
-            }
-        }).collect();
+                _ => unreachable!(),
+            })
+            .collect();
 
         let map = map_section
             .lines()
@@ -70,7 +73,10 @@ impl LargerGoodsDeposit {
     }
 
     pub fn exec(&mut self) {
+        // self.print();
         for movement in self.path.clone() {
+            // println!("Next: {}", &movement.to_s());
+            // self.print();
             self.try_to_move_robot(&movement);
         }
     }
@@ -109,35 +115,10 @@ impl LargerGoodsDeposit {
     }
 
     fn try_to_move_robot(&mut self, movement: &Movement) {
-        // if let Some(first_empty_position) = self.next_empty_space_from(&self.robot, movement) {
-        //     let next_position = self.robot.neighbor_at(movement);
-        //     self.map[first_empty_position.row][first_empty_position.column] =
-        //         self.map[next_position.row][next_position.column].clone();
-        //     self.map[next_position.row][next_position.column] = Element::Empty;
-        //     self.robot = next_position;
-        // }
-
         let next_position = self.robot.neighbor_at(movement);
-        match self.at(&next_position) {
-            Element::Wall => {}
-            Element::BoxWest => self.try_to_move_box(movement, vec![next_position, next_position.neighbor_at(&Movement::East)]),
-            Element::BoxEast => self.try_to_move_box(movement, vec![next_position, next_position.neighbor_at(&Movement::West)]),
-            Element::Empty => self.robot = next_position
-        }
-
-
-        // if try_to_move_box(next_pos):
-        //   move_robot
-
-
-    }
-
-    fn next_empty_space_from(&self, position: &Position, movement: &Movement) -> Option<Position> {
-        let new_position = position.neighbor_at(movement);
-        match self.at(&new_position) {
-            Element::Wall => None,
-            Element::BoxWest | Element::BoxEast => self.next_empty_space_from(&new_position, movement),
-            Element::Empty => Some(new_position),
+        if self.can_push_to(&next_position, movement) {
+            self.push_to(&next_position, movement);
+            self.robot = next_position;
         }
     }
 
@@ -145,15 +126,114 @@ impl LargerGoodsDeposit {
         &self.map[position.row][position.column]
     }
 
-    fn try_to_move_box(&self, movement: &Movement, box_positions: Vec<Position>) {
-        todo!()
+    fn push_to(&mut self, pos: &Position, movement: &Movement) {
+        let next_elem = self.at(pos).clone();
+
+        match (next_elem, movement) {
+            (Element::Wall, _) => unreachable!(),
+            (Element::Empty, _) => {
+                return;
+            },
+            (Element::BoxEast, Movement::North) | (Element::BoxEast, Movement::South)  => {
+                let other_half = pos.west();
+                self.push_to(&pos.neighbor_at(movement), movement);
+                self.push_to(&other_half.neighbor_at(movement), movement);
+                self.replace(&pos.neighbor_at(movement), Element::BoxEast);
+                self.replace(&other_half.neighbor_at(movement), Element::BoxWest);
+                self.replace(pos, Element::Empty);
+                self.replace(&other_half, Element::Empty);
+            }
+            (Element::BoxWest, Movement::North) | (Element::BoxWest, Movement::South) => {
+                let other_half = pos.east();
+                self.push_to(&pos.neighbor_at(movement), movement);
+                self.push_to(&other_half.neighbor_at(movement), movement);
+                self.replace(&pos.neighbor_at(movement), Element::BoxWest);
+                self.replace(&other_half.neighbor_at(movement), Element::BoxEast);
+                self.replace(pos, Element::Empty);
+                self.replace(&other_half, Element::Empty);
+            }
+            (Element::BoxEast, Movement::West) => {
+                self.push_to(&pos.west().west(), movement);
+                self.replace(&pos.west().west(), Element::BoxWest);
+                self.replace(&pos.west(), Element::BoxEast);
+                self.replace(&pos, Element::Empty);
+            }
+            (Element::BoxWest, Movement::East) => {
+                self.push_to(&pos.east().east(), movement);
+                self.replace(&pos.east().east(), Element::BoxEast);
+                self.replace(&pos.east(), Element::BoxWest);
+                self.replace(&pos, Element::Empty);
+            }
+
+            _ => unreachable!()
+        }
+    }
+
+    fn replace(&mut self, position: &Position, elem: Element) {
+        self.map[position.row][position.column] = elem
+    }
+
+    fn can_push_to(&self, pos: &Position, movement: &Movement) -> bool {
+        let next_elem = self.at(pos).clone();
+
+        match (next_elem, movement) {
+            (Element::Wall, _) => false,
+            (Element::Empty, _) => true,
+            (Element::BoxEast, Movement::North) | (Element::BoxEast, Movement::South) => {
+                let other_half = pos.west();
+                self.can_push_to(&pos.neighbor_at(movement), movement) &&
+                    self.can_push_to(&other_half.neighbor_at(movement), movement)
+            }
+            (Element::BoxWest, Movement::North) | (Element::BoxWest, Movement::South) => {
+                let other_half = pos.east();
+                self.can_push_to(&pos.neighbor_at(movement), movement) &&
+                    self.can_push_to(&other_half.neighbor_at(movement), movement)
+            }
+            (Element::BoxEast, Movement::West) => {
+                self.can_push_to(&pos.west().west(), movement)
+            }
+            (Element::BoxWest, Movement::East) => {
+                self.can_push_to(&pos.east().east(), movement)
+            }
+
+            _ => unreachable!()
+        }
+
+        // match self.at(pos) {
+        //     Element::Wall => false,
+        //     Element::BoxWest => match movement {
+        //         Movement::North | Movement::South => {
+        //             self.can_push_to(&pos.neighbor_at(movement), movement)
+        //                 && self.can_push_to(&pos.neighbor_at(&Movement::East).neighbor_at(movement), movement)
+        //         }
+        //         Movement::East => {
+        //             self.can_push_to(&pos.neighbor_at(&Movement::East).neighbor_at(&Movement::East), movement)
+        //         }
+        //         Movement::West => {
+        //             self.can_push_to(&pos.neighbor_at(movement), movement)
+        //         }
+        //     },
+        //     Element::BoxEast => match movement {
+        //         Movement::North | Movement::South => {
+        //             self.can_push_to(&pos.neighbor_at(movement), movement)
+        //                 && self.can_push_to(&pos.neighbor_at(&Movement::West).neighbor_at(movement), movement)
+        //         }
+        //         Movement::East => {
+        //             self.can_push_to(&pos.neighbor_at(movement), movement)
+        //         }
+        //         Movement::West => {
+        //             self.can_push_to(&pos.neighbor_at(&Movement::West).neighbor_at(&Movement::West), movement)
+        //         }
+        //     },
+        //     Element::Empty => true,
+        // }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use text_block_macros::text_block_fnl;
     use crate::step2;
+    use text_block_macros::text_block_fnl;
     // use super::*;
 
     #[test]
