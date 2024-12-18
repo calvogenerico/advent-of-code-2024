@@ -1,6 +1,8 @@
 use step1::GoodsDeposit;
+use crate::step2::LargerGoodsDeposit;
 
 mod step1;
+mod step2;
 
 fn step1(input: &str) -> usize {
     let mut deposit = GoodsDeposit::from_str(input);
@@ -9,7 +11,9 @@ fn step1(input: &str) -> usize {
 }
 
 fn step2(input: &str) -> usize {
-    input.len()
+    let mut deposit = LargerGoodsDeposit::from_str(input);
+    deposit.exec();
+    deposit.sum_gps()
 }
 
 fn main() {

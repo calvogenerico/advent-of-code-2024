@@ -1,6 +1,6 @@
 pub struct Position {
-    row: usize,
-    column: usize,
+    pub row: usize,
+    pub column: usize,
 }
 
 impl Position {
