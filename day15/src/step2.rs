@@ -198,35 +198,6 @@ impl LargerGoodsDeposit {
 
             _ => unreachable!()
         }
-
-        // match self.at(pos) {
-        //     Element::Wall => false,
-        //     Element::BoxWest => match movement {
-        //         Movement::North | Movement::South => {
-        //             self.can_push_to(&pos.neighbor_at(movement), movement)
-        //                 && self.can_push_to(&pos.neighbor_at(&Movement::East).neighbor_at(movement), movement)
-        //         }
-        //         Movement::East => {
-        //             self.can_push_to(&pos.neighbor_at(&Movement::East).neighbor_at(&Movement::East), movement)
-        //         }
-        //         Movement::West => {
-        //             self.can_push_to(&pos.neighbor_at(movement), movement)
-        //         }
-        //     },
-        //     Element::BoxEast => match movement {
-        //         Movement::North | Movement::South => {
-        //             self.can_push_to(&pos.neighbor_at(movement), movement)
-        //                 && self.can_push_to(&pos.neighbor_at(&Movement::West).neighbor_at(movement), movement)
-        //         }
-        //         Movement::East => {
-        //             self.can_push_to(&pos.neighbor_at(movement), movement)
-        //         }
-        //         Movement::West => {
-        //             self.can_push_to(&pos.neighbor_at(&Movement::West).neighbor_at(&Movement::West), movement)
-        //         }
-        //     },
-        //     Element::Empty => true,
-        // }
     }
 }
 
