@@ -134,37 +134,38 @@ impl LargerGoodsDeposit {
             (Element::Empty, _) => {
                 return;
             },
-            (Element::BoxEast, Movement::North) | (Element::BoxEast, Movement::South)  => {
-                let other_half = pos.west();
-                self.push_to(&pos.neighbor_at(movement), movement);
-                self.push_to(&other_half.neighbor_at(movement), movement);
-                self.replace(&pos.neighbor_at(movement), Element::BoxEast);
-                self.replace(&other_half.neighbor_at(movement), Element::BoxWest);
-                self.replace(pos, Element::Empty);
-                self.replace(&other_half, Element::Empty);
-            }
-            (Element::BoxWest, Movement::North) | (Element::BoxWest, Movement::South) => {
-                let other_half = pos.east();
-                self.push_to(&pos.neighbor_at(movement), movement);
-                self.push_to(&other_half.neighbor_at(movement), movement);
-                self.replace(&pos.neighbor_at(movement), Element::BoxWest);
-                self.replace(&other_half.neighbor_at(movement), Element::BoxEast);
-                self.replace(pos, Element::Empty);
-                self.replace(&other_half, Element::Empty);
-            }
-            (Element::BoxEast, Movement::West) => {
-                self.push_to(&pos.west().west(), movement);
-                self.replace(&pos.west().west(), Element::BoxWest);
-                self.replace(&pos.west(), Element::BoxEast);
-                self.replace(&pos, Element::Empty);
-            }
-            (Element::BoxWest, Movement::East) => {
-                self.push_to(&pos.east().east(), movement);
-                self.replace(&pos.east().east(), Element::BoxEast);
-                self.replace(&pos.east(), Element::BoxWest);
-                self.replace(&pos, Element::Empty);
-            }
+            (Element::BoxEast | Element::BoxWest, Movement::North | Movement::South) => {
+                let other_half = self.other_half(pos);
 
+                let original_here = self.at(pos).clone();
+                let original_other = self.at(&other_half).clone();
+
+                self.push_to(&pos.neighbor_at(movement), movement);
+                self.push_to(&other_half.neighbor_at(movement), movement);
+                self.replace(&pos.neighbor_at(movement), original_here);
+                self.replace(&other_half.neighbor_at(movement), original_other);
+                self.replace(pos, Element::Empty);
+                self.replace(&other_half, Element::Empty);
+            }
+            (Element::BoxEast | Element::BoxWest, Movement::West | Movement::East) => {
+                let other_half = self.other_half(pos);
+                let after_other_half = other_half.neighbor_at(movement);
+
+                let original_here = self.at(pos).clone();
+                let original_other_half = self.at(&other_half).clone();
+
+                self.push_to(&after_other_half, movement);
+                self.replace(&other_half, original_here);
+                self.replace(&after_other_half, original_other_half);
+                self.replace(&pos, Element::Empty);
+            }
+        }
+    }
+
+    fn other_half(&self, pos: &Position) -> Position {
+        match self.at(pos) {
+            Element::BoxWest => pos.east(),
+            Element::BoxEast => pos.west(),
             _ => unreachable!()
         }
     }
@@ -179,24 +180,14 @@ impl LargerGoodsDeposit {
         match (next_elem, movement) {
             (Element::Wall, _) => false,
             (Element::Empty, _) => true,
-            (Element::BoxEast, Movement::North) | (Element::BoxEast, Movement::South) => {
-                let other_half = pos.west();
+            (Element::BoxEast | Element::BoxWest, Movement::North | Movement::South)  => {
+                let other_half = self.other_half(pos);
                 self.can_push_to(&pos.neighbor_at(movement), movement) &&
                     self.can_push_to(&other_half.neighbor_at(movement), movement)
             }
-            (Element::BoxWest, Movement::North) | (Element::BoxWest, Movement::South) => {
-                let other_half = pos.east();
-                self.can_push_to(&pos.neighbor_at(movement), movement) &&
-                    self.can_push_to(&other_half.neighbor_at(movement), movement)
+            (Element::BoxEast | Element::BoxWest, Movement::West | Movement::East) => {
+                self.can_push_to(&self.other_half(pos).neighbor_at(movement), movement)
             }
-            (Element::BoxEast, Movement::West) => {
-                self.can_push_to(&pos.west().west(), movement)
-            }
-            (Element::BoxWest, Movement::East) => {
-                self.can_push_to(&pos.east().east(), movement)
-            }
-
-            _ => unreachable!()
         }
     }
 }
